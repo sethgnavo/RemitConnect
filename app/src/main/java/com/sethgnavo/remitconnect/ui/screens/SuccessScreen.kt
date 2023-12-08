@@ -60,8 +60,8 @@ fun SuccessScreen(
         RemitButton(
             text = stringResource(R.string.got_it),
             onClick = {
-                navController.popBackStack(Destinations.HomeRoute, inclusive = true)
-                navController.navigate(Destinations.HomeRoute)
+                navController.popBackStack(Destinations.HOME_ROUTE, inclusive = true)
+                navController.navigate(Destinations.HOME_ROUTE)
             },
         )
     }

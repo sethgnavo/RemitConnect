@@ -1,5 +1,6 @@
 package com.sethgnavo.remitconnect.ui.screens
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -59,11 +61,16 @@ import com.sethgnavo.remitconnect.viewmodel.SendMoneyToAfricaFlowViewModel
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun HomeScreen(
-    navController: NavController, sendMoneyViewModel: SendMoneyToAfricaFlowViewModel? = viewModel()
+    navController: NavController//, sendMoneyViewModel: SendMoneyToAfricaFlowViewModel? = viewModel()
 ) {
+    val activity = LocalContext.current as ComponentActivity
+    val sendMoneyViewModel: SendMoneyToAfricaFlowViewModel =
+        viewModel(viewModelStoreOwner = activity, factory = SendMoneyToAfricaFlowViewModel.Factory)
+
     LaunchedEffect(key1 = Unit) {
         sendMoneyViewModel?.getUserBalance()
     }
+
     val balance = sendMoneyViewModel?.userBalance?.observeAsState(0.0)
 
     Surface(color = GeneralBackground) {
@@ -251,7 +258,7 @@ fun HomeScreen(
                     Pair(stringResource(R.string.nav_settings), R.drawable.cog_f)
                 ),
                 modifier = Modifier.fillMaxWidth(),
-                onSendMoneyClick = { navController.navigate(Destinations.SendMoneyOptionsRoute) })
+                onSendMoneyClick = { navController.navigate(Destinations.SEND_MONEY_OPTIONS_ROUTE) })
         }
     }
 }

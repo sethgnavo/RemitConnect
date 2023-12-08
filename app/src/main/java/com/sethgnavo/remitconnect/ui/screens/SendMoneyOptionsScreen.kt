@@ -32,7 +32,7 @@ fun SendMoneyOptionsScreen(navController: NavController) {
             .background(color = Color.White)
             .fillMaxHeight()
     ) {
-        TopNavBar(upPress = { navController.popBackStack() })
+        TopNavBar(upPress = { navController.popBackStack() }, showCloseButton = true)
 
         Spacer(Modifier.height(8.dp))
 
@@ -54,7 +54,7 @@ fun SendMoneyOptionsScreen(navController: NavController) {
         OptionItem(iconResId = R.drawable.world,
             title = stringResource(R.string.send_to_africa),
             onClick = {
-                navController.navigate(Destinations.SendToAfricaRoute)
+                navController.navigate(Destinations.SEND_TO_AFRICA_ROUTE)
             })
 
     }

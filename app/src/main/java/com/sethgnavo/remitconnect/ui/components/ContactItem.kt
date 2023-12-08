@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.sethgnavo.remitconnect.R
-import com.sethgnavo.remitconnect.data.Recipient
+import com.sethgnavo.remitconnect.model.Recipient
 import com.sethgnavo.remitconnect.ui.theme.Gray05
 
 @Preview

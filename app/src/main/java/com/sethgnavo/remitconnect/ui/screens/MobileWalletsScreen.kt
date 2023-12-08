@@ -17,8 +17,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,8 +39,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.sethgnavo.remitconnect.R
-import com.sethgnavo.remitconnect.data.Wallet
+import com.sethgnavo.remitconnect.model.Wallet
+import com.sethgnavo.remitconnect.repository.NetworkResult
 import com.sethgnavo.remitconnect.ui.components.RemitButton
 import com.sethgnavo.remitconnect.ui.components.TopNavBar
 import com.sethgnavo.remitconnect.ui.navigation.Destinations
@@ -47,20 +52,26 @@ import com.sethgnavo.remitconnect.ui.theme.HomeStyle
 import com.sethgnavo.remitconnect.ui.theme.Primary100
 import com.sethgnavo.remitconnect.viewmodel.SendMoneyToAfricaFlowViewModel
 
-@Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun MobileWalletsScreen(
     navController: NavController
 ) {
     val activity = LocalContext.current as ComponentActivity
-    val viewModel: SendMoneyToAfricaFlowViewModel = viewModel(viewModelStoreOwner = activity)
+    val viewModel: SendMoneyToAfricaFlowViewModel =
+        viewModel(viewModelStoreOwner = activity, factory = SendMoneyToAfricaFlowViewModel.Factory)
 
-    val wallets = viewModel._walletListResponse
-    viewModel.getWalletList()
+    LaunchedEffect(key1 = true) {
+        viewModel.loadWallets()
+    }
+
+    val wallets = viewModel.wallets.collectAsState()
 
     var selectedWallet by remember { mutableStateOf<Wallet?>(null) }
 
-    Column(Modifier.background(color = Color.White)) {
+    Column(
+        Modifier
+            .background(color = Color.White)
+            .fillMaxWidth()) {
         TopNavBar(upPress = { navController.popBackStack() })
 
         Spacer(Modifier.height(8.dp))
@@ -73,53 +84,67 @@ fun MobileWalletsScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        Column(Modifier.weight(1f)) {
-            wallets.forEach { item ->
-                val strokeColor = if (item == selectedWallet) Primary100 else Gray15
-                val backgroundColor =
-                    if (item == selectedWallet) Primary100.copy(alpha = 0.1f) else Color.White
+        Column(
+            Modifier
+                .weight(1f)
+                .fillMaxWidth()) {
 
-                Box(modifier = Modifier
+            when (val result = wallets.value) {
+                is NetworkResult.Success -> result.data.forEach { item ->
+                    val strokeColor = if (item == selectedWallet) Primary100 else Gray15
+                    val backgroundColor =
+                        if (item == selectedWallet) Primary100.copy(alpha = 0.1f) else Color.White
 
-                    .padding(horizontal = 24.dp, vertical = 12.dp)
-                    .clickable(onClick = {
-                        selectedWallet = item
-                        viewModel._selectedWallet.value = item
-
-                    },
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() })
-                    .border(
-                        border = BorderStroke(width = 1.dp, color = strokeColor),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    .background(color = backgroundColor, shape = RoundedCornerShape(12.dp))
-                    .fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.padding(16.dp)
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 24.dp, vertical = 12.dp)
+                            .clickable(onClick = {
+                                selectedWallet = item
+                                viewModel._selectedWallet.value = item
+                            },
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() })
+                            .border(
+                                border = BorderStroke(width = 1.dp, color = strokeColor),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .background(color = backgroundColor, shape = RoundedCornerShape(12.dp))
+                            .fillMaxWidth(), contentAlignment = Alignment.Center
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_wave_logo),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(
-                                    color = Color.Transparent, shape = RoundedCornerShape(12.dp)
-                                )
-                        )
-                        Spacer(Modifier.size(16.dp))
-                        Text(
-                            text = item.name,
-                            fontSize = 16.sp,
-                            color = Gray100,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.weight(1f)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_wave_logo),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(
+                                        color = Color.Transparent, shape = RoundedCornerShape(12.dp)
+                                    )
+                            )
+                            Spacer(Modifier.size(16.dp))
+                            Text(
+                                text = item.name,
+                                fontSize = 16.sp,
+                                color = Gray100,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.weight(1f)
+                            )
 
+                        }
                     }
                 }
+
+                is NetworkResult.Error -> Text(result.exception.message ?: "Unknown Error")
+                NetworkResult.Loading -> CircularProgressIndicator(
+                    Modifier
+                        .padding(56.dp)
+                        .size(32.dp)
+                        .align(Alignment.CenterHorizontally)
+                )
             }
         }
 
@@ -133,9 +158,15 @@ fun MobileWalletsScreen(
             RemitButton(
                 text = stringResource(id = R.string.continue_litteral),
                 enabled = selectedWallet != null,
-                onClick = { navController.navigate(Destinations.SendMoneyRoute) },
+                onClick = { navController.navigate(Destinations.SEND_MONEY_ROUTE) },
                 modifier = Modifier.fillMaxWidth(),
             )
         }
     }
+}
+
+@Composable
+@Preview(showBackground = true, showSystemUi = true)
+fun MobileWalletsScreenPreview(){
+    MobileWalletsScreen(rememberNavController())
 }

@@ -21,19 +21,19 @@ import com.sethgnavo.remitconnect.ui.screens.SuccessScreen
 @Composable
 fun App() {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = Destinations.HomeRoute) {
-        composable(Destinations.HomeRoute) { HomeScreen(navController) }
-        composable(Destinations.SendMoneyOptionsRoute,
+    NavHost(navController = navController, startDestination = Destinations.HOME_ROUTE) {
+        composable(Destinations.HOME_ROUTE) { HomeScreen(navController) }
+        composable(Destinations.SEND_MONEY_OPTIONS_ROUTE,
             enterTransition = { enterTransition() },
             exitTransition = { exitTransition() },
             popEnterTransition = { popEnterTransition() },
             popExitTransition = { popExitTransition() }
         ) { SendMoneyOptionsScreen(navController) }
-        composable(Destinations.SendToAfricaRoute) { SendToAfricaScreen(navController) }
-        composable(Destinations.SendMoneyRoute) { SendMoneyScreen(navController = navController) }
-        composable(Destinations.RecipientRoute) { RecipientScreen(navController) }
-        composable(Destinations.SuccessRoute) { SuccessScreen(navController) }
-        composable(Destinations.MobileWalletsRoute) { MobileWalletsScreen(navController) }
+        composable(Destinations.SEND_TO_AFRICA_ROUTE) { SendToAfricaScreen(navController) }
+        composable(Destinations.SEND_MONEY_ROUTE) { SendMoneyScreen(navController = navController) }
+        composable(Destinations.RECIPIENT_ROUTE) { RecipientScreen(navController) }
+        composable(Destinations.SUCCESS_ROUTE) { SuccessScreen(navController) }
+        composable(Destinations.MOBILE_WALLETS_ROUTE) { MobileWalletsScreen(navController) }
     }
 }
 

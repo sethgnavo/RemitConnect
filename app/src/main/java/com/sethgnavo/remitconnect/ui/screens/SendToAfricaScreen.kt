@@ -50,7 +50,7 @@ fun SendToAfricaScreen(navController: NavController) {
             iconResId = R.drawable.arrow_square_right_f,
             title = stringResource(R.string.mobile_wallets),
             onClick = {
-                navController.navigate(Destinations.RecipientRoute)
+                navController.navigate(Destinations.RECIPIENT_ROUTE)
             })
         OptionItem(
             iconResId = R.drawable.arrow_square_right_f,

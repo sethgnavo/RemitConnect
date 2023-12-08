@@ -74,7 +74,8 @@ fun SendMoneyScreen(
     navController: NavController,
 ) {
     val activity = LocalContext.current as ComponentActivity
-    val viewModel: SendMoneyToAfricaFlowViewModel = viewModel(viewModelStoreOwner = activity)
+    //val viewModel: SendMoneyToAfricaFlowViewModel = viewModel(viewModelStoreOwner = activity)
+    val viewModel: SendMoneyToAfricaFlowViewModel = viewModel(viewModelStoreOwner = activity, factory = SendMoneyToAfricaFlowViewModel.Factory)
 
     val amountToSendValue by viewModel.amountToSend.observeAsState("")
     val exchangeRate by viewModel.exchangeRateEURXOF.observeAsState(0.0)
@@ -92,11 +93,7 @@ fun SendMoneyScreen(
 
         Column(Modifier.background(color = Color.White)) {
 
-            TopNavBar(upPress = {
-                viewModel.resetSendMoneyToAfricaFlow()
-                navController.popBackStack(Destinations.HomeRoute, inclusive = true)
-                navController.navigate(Destinations.HomeRoute)
-            }, showCloseButton = true)
+            TopNavBar(upPress = { navController.popBackStack() })
             Column(
                 Modifier
                     .verticalScroll(rememberScrollState())
@@ -142,7 +139,7 @@ fun SendMoneyScreen(
                                     fontWeight = FontWeight.SemiBold
                                 )
                             },
-                            onValueChange = {newText ->
+                            onValueChange = { newText ->
                                 if (newText.all { it.isDigit() || it == '.' }) {
                                     viewModel.onAmountToSendChange(newText)
                                 }
@@ -386,7 +383,7 @@ fun SendMoneyScreen(
                     RemitButton(
                         text = stringResource(R.string.confirm),
                         onClick = {
-                            navController.navigate(Destinations.SuccessRoute)
+                            navController.navigate(Destinations.SUCCESS_ROUTE)
                             showBottomSheet = false
                             viewModel.resetSendMoneyToAfricaFlow()
                         },

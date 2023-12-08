@@ -28,6 +28,8 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -49,7 +51,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.sethgnavo.remitconnect.R
-import com.sethgnavo.remitconnect.data.Recipient
+import com.sethgnavo.remitconnect.model.Recipient
+import com.sethgnavo.remitconnect.repository.NetworkResult
 import com.sethgnavo.remitconnect.ui.components.ContactItem
 import com.sethgnavo.remitconnect.ui.components.RemitButton
 import com.sethgnavo.remitconnect.ui.components.RemitIconButton
@@ -73,9 +76,8 @@ fun RecipientScreen(
 ) {
 
     val activity = LocalContext.current as ComponentActivity
-    val viewModel: SendMoneyToAfricaFlowViewModel = viewModel(viewModelStoreOwner = activity)
-
-    viewModel.getRecipientList()
+    val viewModel: SendMoneyToAfricaFlowViewModel =
+        viewModel(viewModelStoreOwner = activity, factory = SendMoneyToAfricaFlowViewModel.Factory)
 
     val searchRecipientQuery by viewModel.searchRecipientQuery.observeAsState("")
     val recipientPhoneNumberState by viewModel.recipientPhoneNumber.observeAsState("")
@@ -197,7 +199,7 @@ fun RecipientScreen(
                             )
 
                             viewModel._selectedRecipient.value = recipient
-                            navController.navigate(Destinations.MobileWalletsRoute)
+                            navController.navigate(Destinations.MOBILE_WALLETS_ROUTE)
 
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -212,6 +214,11 @@ fun RecipientScreen(
 fun PhoneRecipientList(
     searchState: String, navController: NavController, viewModel: SendMoneyToAfricaFlowViewModel
 ) {
+    val recipients = viewModel.recipients.collectAsState()
+
+    LaunchedEffect(key1 = true) {
+        viewModel.loadRecipients()
+    }
 
     Column {
         Text(
@@ -223,50 +230,77 @@ fun PhoneRecipientList(
         Spacer(Modifier.height(16.dp))
 
         Divider(color = Gray05)
-        LazyColumn(Modifier.wrapContentHeight(unbounded = false)) {
 
-            itemsIndexed(items = viewModel._filteredRecipientListResponse) { index, recipient ->
+        when (val result = recipients.value) {
+            is NetworkResult.Success -> LazyColumn(Modifier.wrapContentHeight(unbounded = false)) {
+                itemsIndexed(items = result.data.filterRecipients(searchState)) { index, recipient ->
 
-                recipient.phoneNumber =
-                    "+229 98 767 289"//we don't recieve phoneNumber from the backend API
-                ContactItem(imageUrl = "https://i.pravatar.cc/300",
-                    navController = navController,
-                    recipient = recipient,
-                    onClick = {
-                        viewModel._selectedRecipient.value = recipient
-                        navController.navigate(Destinations.MobileWalletsRoute)
-                    })
+                    recipient.phoneNumber =
+                        "+229 98 767 289"//we don't receive phoneNumber from the backend API
+                    ContactItem(imageUrl = "https://i.pravatar.cc/300",
+                        navController = navController,
+                        recipient = recipient,
+                        onClick = {
+                            viewModel._selectedRecipient.value = recipient
+                            navController.navigate(Destinations.MOBILE_WALLETS_ROUTE)
+                        })
+                }
             }
-        }
 
-        if (viewModel._filteredRecipientListResponse.isEmpty() && searchState.isEmpty()) {
-            CircularProgressIndicator(
+            is NetworkResult.Error -> Text(result.exception.message ?: "Unknown Error")
+            NetworkResult.Loading -> CircularProgressIndicator(
                 Modifier
                     .padding(56.dp)
                     .size(32.dp)
                     .align(Alignment.CenterHorizontally)
             )
-
-        } else if (viewModel._filteredRecipientListResponse.isEmpty()) {
-
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
+        }
+        if (recipients.value is NetworkResult.Success) {
+            if (searchState.isEmpty() && (recipients.value as NetworkResult.Success<List<Recipient>>).data.filterRecipients(
+                    searchState
+                )
+                    .isEmpty()
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.illustration_empty),
-                    contentDescription = null,
-                    modifier = Modifier.padding(40.dp)
+                CircularProgressIndicator(
+                    Modifier
+                        .padding(56.dp)
+                        .size(32.dp)
+                        .align(Alignment.CenterHorizontally)
                 )
-                Spacer(Modifier.size(8.dp))
-                Text(
-                    stringResource(R.string.no_matching_results_found),
-                    color = Gray100,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
-                )
+            } else if ((recipients.value as NetworkResult.Success<List<Recipient>>).data.filterRecipients(
+                    searchState
+                ).isEmpty()
+            ) {
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.illustration_empty),
+                        contentDescription = null,
+                        modifier = Modifier.padding(40.dp)
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    Text(
+                        stringResource(R.string.no_matching_results_found),
+                        color = Gray100,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
+    }
+}
+
+
+fun List<Recipient>.filterRecipients(query: String): List<Recipient> {
+    return if (query.isEmpty()) this else filter { recipient ->
+        recipient.name.contains(query, ignoreCase = true) || recipient.phoneNumber!!.contains(
+            query,
+            ignoreCase = true
+        )
     }
 }
 

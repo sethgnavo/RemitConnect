@@ -74,6 +74,7 @@ dependencies {
 
     implementation(libs.androidx.compose.runtime)
     implementation("androidx.compose.runtime:runtime-livedata:1.6.0-beta02")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.5.1")
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.ui.util)

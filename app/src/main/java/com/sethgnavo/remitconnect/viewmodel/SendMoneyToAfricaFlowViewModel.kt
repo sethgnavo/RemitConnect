@@ -7,22 +7,27 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.sethgnavo.remitconnect.data.Recipient
-import com.sethgnavo.remitconnect.data.Wallet
-import com.sethgnavo.remitconnect.model.RemitConnectApiService
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.sethgnavo.remitconnect.model.Recipient
+import com.sethgnavo.remitconnect.model.Wallet
+import com.sethgnavo.remitconnect.repository.NetworkResult
+import com.sethgnavo.remitconnect.repository.Repository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
-class SendMoneyToAfricaFlowViewModel : ViewModel() {
+class SendMoneyToAfricaFlowViewModel(private val repository: Repository) : ViewModel() {
+
+     val wallets = MutableStateFlow<NetworkResult<List<Wallet>>>(NetworkResult.Loading)
+     val recipients =
+        MutableStateFlow<NetworkResult<List<Recipient>>>(NetworkResult.Loading)
 
     val _selectedRecipient = MutableLiveData<Recipient?>()
     val _selectedWallet = MutableLiveData<Wallet?>()
 
-    var _walletListResponse: List<Wallet> by mutableStateOf(listOf())
-    var _recipientListResponse: List<Recipient> by mutableStateOf(listOf())
     var _filteredRecipientListResponse: List<Recipient> by mutableStateOf(listOf())
-    var _recipientsListErrorMessage: String by mutableStateOf("")
-    var _walletsListErrorMessage: String by mutableStateOf("")
 
     private val _recipientPhoneNumber = MutableLiveData("")
     private val _recipientFirstName = MutableLiveData("")
@@ -69,16 +74,18 @@ class SendMoneyToAfricaFlowViewModel : ViewModel() {
             updateTotal()
         }
     }
-
-    fun getWalletList() {
+    fun loadWallets() {
         viewModelScope.launch {
-            val apiService = RemitConnectApiService.getInstance()
+            repository.fetchWallets().collect { result ->
+                wallets.value = result
+            }
+        }
+    }
 
-            try {
-                val walletList = apiService.getWallets()
-                _walletListResponse = walletList
-            } catch (e: Exception) {
-                _walletsListErrorMessage = e.message.toString()
+    fun loadRecipients() {
+        viewModelScope.launch {
+            repository.fetchRecipients().collect { result ->
+                recipients.value = result
             }
         }
     }
@@ -101,33 +108,6 @@ class SendMoneyToAfricaFlowViewModel : ViewModel() {
 
     init {
         searchRecipientQuery.observeForever {
-            filterRecipients()
-        }
-    }
-
-    private fun filterRecipients() {
-        val query = searchRecipientQuery.value ?: ""
-        _filteredRecipientListResponse = if (query.isEmpty()) {
-            // If the search query is empty, return the entire list
-            _recipientListResponse
-        } else {
-            _recipientListResponse.filter {
-                it.name.contains(query, ignoreCase = true)
-            }
-        }
-    }
-
-    fun getRecipientList() {
-        viewModelScope.launch {
-            val apiService = RemitConnectApiService.getInstance()
-
-            try {
-                val recipientList = apiService.getRecipients()
-                _recipientListResponse = recipientList
-                filterRecipients() // Re-filter the list whenever it's updated
-            } catch (e: Exception) {
-                _recipientsListErrorMessage = e.message.toString()
-            }
         }
     }
 
@@ -148,4 +128,13 @@ class SendMoneyToAfricaFlowViewModel : ViewModel() {
         _amountToSend.value = ""
     }
 
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                SendMoneyToAfricaFlowViewModel(
+                    repository = Repository()
+                )
+            }
+        }
+    }
 }

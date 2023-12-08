@@ -1,4 +1,4 @@
-package com.sethgnavo.remitconnect.data
+package com.sethgnavo.remitconnect.model
 
 data class Recipient(
     var id: String,
